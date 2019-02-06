@@ -95,6 +95,17 @@ void handleCommand(char **args, int bg) {
 		}
 	}
 
+	else if () {
+	//TODO: implement !! here
+
+	}
+	
+	else if () {
+	//TODO: implement cd here
+
+	
+	}
+
 	// handle external command with our handy function
 	else
 		runExternalCommand(args, bg);
