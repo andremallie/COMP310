@@ -17,7 +17,6 @@
 #include "parse_args.h"
 #include "history_queue.h"
 
-k
 
 static void handleCommand(char **args, int bg);
 void runExternalCommand(char **args, int bg);
