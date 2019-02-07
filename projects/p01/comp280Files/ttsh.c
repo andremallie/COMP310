@@ -70,7 +70,7 @@ void parseAndExecute(char *cmdline, char **args) {
 	if (args[0] != NULL) {
 		if (args[0][0] != '!')
 			add_to_history(cmdline);
-			handleCommand(args, bg);
+		handleCommand(args, bg);
 	}
 }
 
@@ -92,24 +92,6 @@ void handleCommand(char **args, int bg) {
 			fprintf(stderr, "ERROR: %d is not in history\n", cmd_num);
 		else {
 			parseAndExecute(cmd, args);
-		}
-	}
-
-//	else if () {
-		//TODO: implement !!
-//
-//	}
-
-	else if (strcmp(args[0], "cd") == 0) {
-		if (args[1] == NULL) {
-			chdir("/");
-		}
-		else {
-			char *path = args[1];
-			int change = chdir(path);	
-			if (change == -1) {
-				fprintf(stderr, "ERROR: The filepath %s may be incorrect, please try again\n",args[1]);
-			}
 		}
 	}
 
