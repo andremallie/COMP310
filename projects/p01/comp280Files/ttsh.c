@@ -17,7 +17,7 @@
 #include "parse_args.h"
 #include "history_queue.h"
 
-int histCounter = 0;
+int histCounter = -1;
 
 static void handleCommand(char **args, int bg);
 void runExternalCommand(char **args, int bg);
@@ -66,17 +66,17 @@ int main(){
 void parseAndExecute(char *cmdline, char **args) {
 	// make a call to parseArguments function to parse it into its argv format
 	int bg = parseArguments(cmdline, args);
-
 	// determine how to execute it, and then execute it
 	if (args[0] != NULL) {
-		if (args[0][0] != '!')
+		if (args[0][0] != '!') { 
 			add_to_history(cmdline);
-			handleCommand(args, bg);
+			histCounter++;
+		}
+		handleCommand(args, bg);
 	}
 }
 
 void handleCommand(char **args, int bg) {         
-	histCounter++;
 	// handle built-in directly
 	if (strcmp(args[0], "exit") == 0) {
 		printf("Goodbye!\n");
@@ -96,15 +96,13 @@ void handleCommand(char **args, int bg) {
 			parseAndExecute(cmd, args);
 		}
 	}
-
 	else if (strcmp(args[0], "!!") == 0) {
-		//TODO: implement !!
-		//printf("%d\n", histCounter);
 		char *cmd = get_command(histCounter);
-		if(cmd == NULL)
-			fprintf(stderr, "ERROR: no previous command in history\n");
-		else
-			parseAndExecute(cmd, args);
+		if(histCounter == -1 || cmd == NULL)
+			fprintf(stderr, "ERROR: no previous arguments in history\n");
+		else {
+			parseAndExecute(cmd,args);
+		}
 	}
 	else if (strcmp(args[0], "cd") == 0) {
 		if (args[1] == NULL) {
@@ -114,23 +112,21 @@ void handleCommand(char **args, int bg) {
 			char *path = args[1];
 			int change = chdir(path);	
 			if (change == -1) {
-				fprintf(stderr, "ERROR: The filepath %s may be incorrect, please try again\n",args[1]);
+				fprintf(stderr, "ERROR: The filepath %s may be incorrect, please try again\n", args[1]);
 			}
 		}
 	}
-
-	// handle external command with our handy function
 	else
 		runExternalCommand(args, bg);
 }
 
 void runExternalCommand(char **args, int bg) {
 	pid_t cpid = fork();
-	if (cpid  ==  0) {
-		// child
+	if(cpid == 0) {
+		//child
 		execvp(args[0], args);
-		// if we got to this point, execvp failed!
-		fprintf(stderr , "ERROR: Command not found\n");
+		///if we got to this point, execvp failed!
+		fprintf(stderr, "ERROR: Command not found\n");
 		exit(63);
 	}
 	else if (cpid > 0) {
