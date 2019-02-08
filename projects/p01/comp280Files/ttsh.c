@@ -56,7 +56,11 @@ int main(){
 		}
 
 		//fprintf(stdout, "DEBUG: %s\n", cmdline);
-
+		//TODO: convert the cmdline string to the path of the command. Need to handle the 3 cases 
+		//(Relative path, absolute path, commands using just their names).
+		//
+		//TODO:Pass the path to parseAndExecute instead of cmdline
+		
 		parseAndExecute(cmdline, argv);
 	}
 
@@ -116,7 +120,8 @@ void handleCommand(char **args, int bg) {
 			}
 		}
 	}
-	else
+	else	
+		//Handle external commands
 		runExternalCommand(args, bg);
 }
 
@@ -125,7 +130,7 @@ void runExternalCommand(char **args, int bg) {
 	if(cpid == 0) {
 		//child
 		execvp(args[0], args);
-		///if we got to this point, execvp failed!
+		///if we got to this point, execv failed!
 		fprintf(stderr, "ERROR: Command not found\n");
 		exit(63);
 	}
