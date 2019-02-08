@@ -71,12 +71,12 @@ void parseAndExecute(char *cmdline, char **args) {
 	if (args[0] != NULL) {
 		if (args[0][0] != '!')
 			add_to_history(cmdline);
-			histCounter++;
 			handleCommand(args, bg);
 	}
 }
 
 void handleCommand(char **args, int bg) {         
+	histCounter++;
 	// handle built-in directly
 	if (strcmp(args[0], "exit") == 0) {
 		printf("Goodbye!\n");
@@ -99,6 +99,7 @@ void handleCommand(char **args, int bg) {
 
 	else if (strcmp(args[0], "!!") == 0) {
 		//TODO: implement !!
+		//printf("%d\n", histCounter);
 		char *cmd = get_command(histCounter);
 		if(cmd == NULL)
 			fprintf(stderr, "ERROR: no previous command in history\n");
