@@ -17,6 +17,7 @@
 #include "parse_args.h"
 #include "history_queue.h"
 
+int histCounter = 0;
 
 static void handleCommand(char **args, int bg);
 void runExternalCommand(char **args, int bg);
@@ -70,6 +71,7 @@ void parseAndExecute(char *cmdline, char **args) {
 	if (args[0] != NULL) {
 		if (args[0][0] != '!')
 			add_to_history(cmdline);
+			histCounter++;
 			handleCommand(args, bg);
 	}
 }
@@ -85,7 +87,7 @@ void handleCommand(char **args, int bg) {
 		print_history();
 	}
 
-	else if (args[0][0] == '!') {
+	else if (args[0][0] == '!' && args[0][1] != '!') {
 		unsigned int cmd_num = strtoul(&args[0][1], NULL, 10);
 		char *cmd = get_command(cmd_num);
 		if (cmd == NULL)
@@ -95,11 +97,14 @@ void handleCommand(char **args, int bg) {
 		}
 	}
 
-//	else if () {
+	else if (strcmp(args[0], "!!") == 0) {
 		//TODO: implement !!
-//
-//	}
-
+		char *cmd = get_command(histCounter);
+		if(cmd == NULL)
+			fprintf(stderr, "ERROR: no previous command in history\n");
+		else
+			parseAndExecute(cmd, args);
+	}
 	else if (strcmp(args[0], "cd") == 0) {
 		if (args[1] == NULL) {
 			chdir("/");
