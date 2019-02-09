@@ -4,7 +4,7 @@
  * Add your top-level comments here.
  */
 
-#define _XOPEN_SOURCE
+#define _XOPEN_SOURCE 700
 
 #include <stdlib.h>
 #include <string.h>
@@ -19,8 +19,8 @@
 
 int histCounter = -1;
 
-static void handleCommand(char **args, int bg);
-void runExternalCommand(char **args, int bg);
+static void handleCommand(char *cmdline, char **args, int bg);
+void runExternalCommand(char *cmdline, char **args, int bg);
 void parseAndExecute(char *cmdline, char **args);
 
 void child_reaper(__attribute__ ((unused)) int sig_num) {
@@ -55,12 +55,7 @@ int main(){
 			exit(0);
 		}
 
-		//fprintf(stdout, "DEBUG: %s\n", cmdline);
-		//TODO: convert the cmdline string to the path of the command. Need to handle the 3 cases 
-		//(Relative path, absolute path, commands using just their names).
-		//
-		//TODO:Pass the path to parseAndExecute instead of cmdline
-		
+		//fprintf(stdout, "DEBUG: %s\n", cmdline);	
 		parseAndExecute(cmdline, argv);
 	}
 
@@ -76,11 +71,11 @@ void parseAndExecute(char *cmdline, char **args) {
 			add_to_history(cmdline);
 			histCounter++;
 		}
-		handleCommand(args, bg);
+		handleCommand(cmdline,args, bg);
 	}
 }
 
-void handleCommand(char **args, int bg) {         
+void handleCommand(char *cmdline, char **args, int bg) {         
 	// handle built-in directly
 	if (strcmp(args[0], "exit") == 0) {
 		printf("Goodbye!\n");
@@ -122,14 +117,45 @@ void handleCommand(char **args, int bg) {
 	}
 	else	
 		//Handle external commands
-		runExternalCommand(args, bg);
+		runExternalCommand(cmdline,args, bg);
 }
 
-void runExternalCommand(char **args, int bg) {
+void runExternalCommand(char *cmdline, char **args, int bg) {
 	pid_t cpid = fork();
 	if(cpid == 0) {
 		//child
-		execvp(args[0], args);
+
+		//TODO: Implement execv here
+
+		char *pth = getenv("PATH");
+		fprintf(stdout, "PATH: %s\n", pth);
+		//Check to see if the cmdline can be accessed directly
+		if(access(cmdline,X_OK) == 0) {
+			execv(cmdline, args);
+		}
+		//first try failed, search for the command
+		else {
+			char full_pth[MAXLINE];
+			char *pth_copy = NULL;
+			pth_copy = strndup(pth, MAXLINE);
+			char *token = strtok(pth_copy, ":");
+			while(token != NULL) {
+				sprintf(full_pth, "%s/%s", token, cmdline);
+				fprintf(stdout, "This is the full path: %s\n",full_pth);
+				if (access(full_pth, X_OK) != 0) {
+					fprintf(stderr, "ERROR: access() failed\n");
+				}
+				if(access(full_pth, X_OK) == 0) {
+					fprintf(stdout,"Found a match");
+					execv(full_pth, args);
+				}
+				//Next Token
+				token = strtok(NULL, ":");
+			}
+			
+		}
+		
+		//execvp(args[0], args);
 		///if we got to this point, execv failed!
 		fprintf(stderr, "ERROR: Command not found\n");
 		exit(63);
