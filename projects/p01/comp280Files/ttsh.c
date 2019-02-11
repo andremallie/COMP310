@@ -40,7 +40,7 @@ int main(){
 
 	while(1) {
 		// (1) print the shell prompt
-		fprintf(stdout, "ttsh> ");  
+		fprintf(stdout, "tosh$ ");  
 		fflush(stdout);
 
 		// (2) read in the next command entered by the user
@@ -141,12 +141,14 @@ void runExternalCommand(char *cmdline, char **args, int bg) {
 			char *token = strtok(pth_copy, ":");
 			while(token != NULL) {
 				sprintf(full_pth, "%s/%s", token, cmdline);
+	// the path needs to be passed in as arg[0]			
+	//			args[0] = full_pth;
 				fprintf(stdout, "This is the full path: %s\n",full_pth);
 				if (access(full_pth, X_OK) != 0) {
 					fprintf(stderr, "ERROR: access() failed\n");
 				}
 				if(access(full_pth, X_OK) == 0) {
-					fprintf(stdout,"Found a match");
+					fprintf(stdout,"Found a match: %s\n\n\n", full_pth);
 					execv(full_pth, args);
 				}
 				//Next Token
