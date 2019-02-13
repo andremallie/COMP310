@@ -124,30 +124,38 @@ void runExternalCommand(char *cmdline, char **args, int bg) {
 	pid_t cpid = fork();
 	if(cpid == 0) {
 		//child
+		
+		//char *name = malloc(MAXLINE*sizeof(char));
+		//name = "/usr/bin/ls";	
+		//if(access(name, F_OK && X_OK) == 0) {
+		//	fprintf(stdout, "The file ls exists and we can write to it\n");
+		//	execv(name,args);
+		//}
 
 		//TODO: Implement execv here
 
 		char *pth = getenv("PATH");
 		fprintf(stdout, "PATH: %s\n", pth);
 		//Check to see if the cmdline can be accessed directly
-		if(access(cmdline,X_OK) == 0) {
+		if(access(cmdline,F_OK && X_OK) == 0) {
 			execv(cmdline, args);
 		}
 		//first try failed, search for the command
 		else {
-			char full_pth[MAXLINE];
-			char *pth_copy = NULL;
+			char *full_pth = malloc(MAXLINE*sizeof(char));
+			char *pth_copy = malloc(MAXLINE*sizeof(char));
+			char *token = malloc(MAXLINE*sizeof(char));
+			pth_copy = NULL;
 			pth_copy = strndup(pth, MAXLINE);
-			char *token = strtok(pth_copy, ":");
+			fprintf(stdout,"pth_copy: %s\n",pth_copy);
+			token = strtok(pth_copy, ":");
 			while(token != NULL) {
 				sprintf(full_pth, "%s/%s", token, cmdline);
-	// the path needs to be passed in as arg[0]			
-	//			args[0] = full_pth;
 				fprintf(stdout, "This is the full path: %s\n",full_pth);
-				if (access(full_pth, X_OK) != 0) {
+				if (access(full_pth,F_OK && X_OK) != 0) {
 					fprintf(stderr, "ERROR: access() failed\n");
 				}
-				if(access(full_pth, X_OK) == 0) {
+				if(access(full_pth,F_OK && X_OK) == 0) {
 					fprintf(stdout,"Found a match: %s\n\n\n", full_pth);
 					execv(full_pth, args);
 				}
