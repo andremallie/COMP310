@@ -22,6 +22,7 @@ int histCounter = -1;
 static void handleCommand(char **args, int bg);
 void runExternalCommand(char **args, int bg);
 void parseAndExecute(char *cmdline, char **args);
+int length(char* s);
 
 void child_reaper(__attribute__ ((unused)) int sig_num) {
 	while (waitpid(-1, NULL, WNOHANG) > 0);
@@ -76,8 +77,27 @@ void parseAndExecute(char *cmdline, char **args) {
 }
 
 void handleCommand(char **args, int bg) {         
+	char ioFlag = 0;
+	char pipeFlag = 0;
+	int argCount = 0;
+	while(args[argCount] != NULL) {
+		int l = length(args[argCount]);
+		for(int i = 0; i<l; i++) {
+			if(args[argCount][i] == '<' || args[argCount][i] == '>')
+				ioFlag = 1;
+			else if(args[argCount][i] == '|')
+				pipeFlag = 1;
+		}
+		argCount++;
+	}
 	// handle built-in directly
-	if (strcmp(args[0], "exit") == 0) {
+	if(pipeFlag) {
+		printf("Pipe!\n");
+	}
+	else if(ioFlag) {
+		printf("I/O Redirect!\n");
+	}
+	else if (strcmp(args[0], "exit") == 0) {
 		printf("Goodbye!\n");
 		exit(0);
 	}
@@ -167,4 +187,11 @@ void runExternalCommand(char **args, int bg) {
 		perror("fork");
 		exit(1);
 	}
+}
+
+int length (char* s) {
+	int i = 0;
+	while(s[i] != '\0')
+		i++;
+	return i;
 }
