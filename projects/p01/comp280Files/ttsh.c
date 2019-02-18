@@ -23,6 +23,7 @@ static void handleCommand(char **args, int bg);
 void runExternalCommand(char **args, int bg);
 void parseAndExecute(char *cmdline, char **args);
 int length(char* s);
+void pipeCmd(char** arg1, char** arg2i, int bg);
 
 void child_reaper(__attribute__ ((unused)) int sig_num) {
 	while (waitpid(-1, NULL, WNOHANG) > 0);
@@ -80,19 +81,34 @@ void handleCommand(char **args, int bg) {
 	char ioFlag = 0;
 	char pipeFlag = 0;
 	int argCount = 0;
+	int pipeInd = 0;
 	while(args[argCount] != NULL) {
 		int l = length(args[argCount]);
 		for(int i = 0; i<l; i++) {
 			if(args[argCount][i] == '<' || args[argCount][i] == '>')
 				ioFlag = 1;
-			else if(args[argCount][i] == '|')
+			else if(args[argCount][i] == '|' && pipeInd == 0) {
 				pipeFlag = 1;
+				pipeInd = argCount;
+				break;
+			}
 		}
 		argCount++;
 	}
 	// handle built-in directly
 	if(pipeFlag) {
-		printf("Pipe!\n");
+		char** arg1 = malloc(MAXLINE*sizeof(char*));
+		char** arg2 = malloc(MAXLINE*sizeof(char*));
+		for(int i = 0; i < pipeInd; i++) {
+			arg1[i] = args[i];
+		}
+		arg1[pipeInd] = '\0';
+		for(int j = 0; args[j] != NULL; j++) {
+			arg2[j] = args[j+pipeInd+1];
+		}
+		pipeCmd(arg1, arg2, bg);
+		free(arg1);
+		free(arg2);
 	}
 	else if(ioFlag) {
 		printf("I/O Redirect!\n");
@@ -194,4 +210,49 @@ int length (char* s) {
 	while(s[i] != '\0')
 		i++;
 	return i;
+}
+
+void pipeCmd(char** arg1, char** arg2, int bg) {
+	pid_t pid1, pid2;
+	int p[2];
+
+	if(pipe(p) < 0)
+		perror("pipe");
+
+	pid1 = fork();
+	if(pid1 == 0) {
+		dup2(p[1], STDOUT_FILENO);
+		close(p[0]);
+
+		handleCommand(arg1, bg);
+	}
+	pid2 = fork();
+	if(pid2 == 0) {
+		dup2(p[0], STDIN_FILENO);
+		close(p[1]);
+
+		handleCommand(arg2, bg);
+	}
+
+	if (pid1 > 0) {
+		if (bg) {
+			waitpid(pid1, NULL, WNOHANG);
+		}
+		else {
+			waitpid(pid1, NULL, 0);
+		}
+	}
+
+	if (pid2 > 0) {
+		if (bg) {
+			waitpid(pid2, NULL, WNOHANG);
+		}
+		else {
+			waitpid(pid2, NULL, 0);
+		}
+	}
+	close(p[0]);
+	close(p[1]);
+
+
 }
