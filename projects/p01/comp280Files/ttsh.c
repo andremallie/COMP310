@@ -13,6 +13,7 @@
 #include <sys/types.h> 
 #include <sys/wait.h>
 #include <signal.h>
+#include <fcntl.h>
 
 #include "parse_args.h"
 #include "history_queue.h"
@@ -22,7 +23,7 @@ int histCounter = -1;
 static void handleCommand(char **args, int bg);
 void runExternalCommand(char **args, int bg);
 void parseAndExecute(char *cmdline, char **args);
-int length(char* s);
+
 
 void child_reaper(__attribute__ ((unused)) int sig_num) {
 	while (waitpid(-1, NULL, WNOHANG) > 0);
@@ -76,28 +77,9 @@ void parseAndExecute(char *cmdline, char **args) {
 	}
 }
 
-void handleCommand(char **args, int bg) {         
-	char ioFlag = 0;
-	char pipeFlag = 0;
-	int argCount = 0;
-	while(args[argCount] != NULL) {
-		int l = length(args[argCount]);
-		for(int i = 0; i<l; i++) {
-			if(args[argCount][i] == '<' || args[argCount][i] == '>')
-				ioFlag = 1;
-			else if(args[argCount][i] == '|')
-				pipeFlag = 1;
-		}
-		argCount++;
-	}
-	// handle built-in directly
-	if(pipeFlag) {
-		printf("Pipe!\n");
-	}
-	else if(ioFlag) {
-		printf("I/O Redirect!\n");
-	}
-	else if (strcmp(args[0], "exit") == 0) {
+void handleCommand(char **args, int bg) {     
+	//handle built in commands
+	if (strcmp(args[0], "exit") == 0) {
 		printf("Goodbye!\n");
 		exit(0);
 	}
@@ -144,13 +126,37 @@ void runExternalCommand(char **args, int bg) {
 	pid_t cpid = fork();
 	if(cpid == 0) {
 		//child
-		char *pth = getenv("PATH");
+		// handle I/O redirect
+	        //Release all file I/O ids
+        	for(int i = 0; args[i] != 0; i++) {
+                	//Check for stdout redirect only
+                	if(strcmp(args[i], "1>") == 0) {
+                        	int fid = open(args[i + 1], O_WRONLY | O_APPEND | O_CREAT, 0666);
+                        	dup2(fid, 1);
+                        	close(fid);
+                	}
+                	//Check for stderr redirect
+			if(strcmp(args[i], "2>") == 0) {
+				int fid = open (args[i + 1], O_WRONLY | O_APPEND | O_CREAT, 0666);
+				dup2(fid, 2);
+				close(fid);
+			}
+                	//Check for stdin redirect
+			 if(strcmp(args[i], "<") == 0) {
+				//TODO: need to check if the input file exists and can be read
+                                int fid = open (args[i + 1], O_RDONLY);
+                                dup2(fid, 0);
+                                close(fid);
+                        }
+        	}
+
 		//Check to see if the cmdline can be accessed directly
 		if(access(args[0],F_OK && X_OK) == 0) {
 			execv(args[0], args);
 		}
 		//first try failed, search for the command
 		else {
+			char *pth = getenv("PATH");
 			char *full_pth = malloc(MAXLINE*sizeof(char));
 			char *pth_copy = malloc(MAXLINE*sizeof(char));
 			char *token = malloc(MAXLINE*sizeof(char));
@@ -189,9 +195,3 @@ void runExternalCommand(char **args, int bg) {
 	}
 }
 
-int length (char* s) {
-	int i = 0;
-	while(s[i] != '\0')
-		i++;
-	return i;
-}
