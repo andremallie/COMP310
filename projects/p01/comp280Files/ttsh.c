@@ -220,48 +220,59 @@ int length (char* s) {
 }
 
 void pipeCmd(char** arg1, char** arg2, int bg) {
-	pid_t pid1, pid2;
+	pid_t pid;
 	int p[2];
 	pipe(p);
 	if(pipe(p) < 0)
 		perror("pipe");
 
-	pid1 = fork();
-	if(pid1 == 0) {
+	pid = fork();
+	if(pid == 0) {
 		close(1);
 		close(p[0]);
 		dup2(p[1], STDOUT_FILENO);
 
 		handleCommand(arg1, bg);
+		printf("ERROR: Failed to Execute!");
+		exit(1);
 	}
-	pid2 = fork();
-	if(pid2 == 0) {
-		close(0);
-		close(p[1]);
-		dup2(p[0], STDIN_FILENO);
+	else {
+		pid = fork();
+		if(pid == 0) {
+			close(0);
+			close(p[1]);
+			dup2(p[0], STDIN_FILENO);
 	
-		handleCommand(arg2, bg);
-	}
-
-	if (pid1 > 0) {
-		if (bg) {
-			waitpid(pid1, NULL, WNOHANG);
+			handleCommand(arg2, bg);
 		}
 		else {
-			waitpid(pid1, NULL, 0);
+			int status;
+			close(p[0]);
+			close(p[1]);
+			waitpid(pid, &status, 0);
 		}
 	}
 
-	if (pid2 > 0) {
-		if (bg) {
-			waitpid(pid2, NULL, WNOHANG);
-		}
-		else {
-			waitpid(pid2, NULL, 0);
-		}
-	}
-	close(p[0]);
-        close(p[1]);
+//	if (pid1 > 0) {
+//		if (bg) {
+//			waitpid(pid1, NULL, WNOHANG);
+//		}
+//		else {
+//			waitpid(pid1, NULL, 0);
+//		}
+//	}
+//
+//	if (pid2 > 0) {
+//		if (bg) {
+//			waitpid(pid2, NULL, WNOHANG);
+//		}
+//		else {
+//			waitpid(pid2, NULL, 0);
+//		}
+//	}
+	
+//	close(p[0]);
+//        close(p[1]);
 }
 
 void ioRedirect(char **args, int bg, int ioarg) {
