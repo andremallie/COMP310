@@ -119,8 +119,6 @@ void handleCommand(char **args, int bg) {
 		free(arg2);
 	}
 	else if(ioFlag) {
-//		printf("I/O Redirect!\n");
-//		fprintf(stdout, "This is the arg that has the io indicator: %d\n", ioarg);		
 		ioRedirect(args, 0, ioarg);
 	}
 	else if (strcmp(args[0], "exit") == 0) {
@@ -224,22 +222,24 @@ int length (char* s) {
 void pipeCmd(char** arg1, char** arg2, int bg) {
 	pid_t pid1, pid2;
 	int p[2];
-
+	pipe(p);
 	if(pipe(p) < 0)
 		perror("pipe");
 
 	pid1 = fork();
 	if(pid1 == 0) {
-		dup2(p[1], STDOUT_FILENO);
+		close(1);
 		close(p[0]);
+		dup2(p[1], STDOUT_FILENO);
 
 		handleCommand(arg1, bg);
 	}
 	pid2 = fork();
 	if(pid2 == 0) {
-		dup2(p[0], STDIN_FILENO);
+		close(0);
 		close(p[1]);
-
+		dup2(p[0], STDIN_FILENO);
+	
 		handleCommand(arg2, bg);
 	}
 
@@ -261,9 +261,7 @@ void pipeCmd(char** arg1, char** arg2, int bg) {
 		}
 	}
 	close(p[0]);
-	close(p[1]);
-
-
+        close(p[1]);
 }
 
 void ioRedirect(char **args, int bg, int ioarg) {
