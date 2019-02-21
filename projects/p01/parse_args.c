@@ -1,3 +1,5 @@
+#define _XOPEN_SOURCE 700
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,7 +8,7 @@
 
 static char *str_copy = NULL;
 
-int parseArguments(char * const line, char **argv) {
+int parseArguments(const char * const line, char **argv) {
 	unsigned i = 0;
 
 	// free string copy if we have used it before

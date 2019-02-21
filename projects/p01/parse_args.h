@@ -35,8 +35,8 @@
  *             zero (false) for a foreground command foreground
  *
  *  @note The contents of argv will be invalidated the next time you call this
- *  function so be careful not to rely on it through multiple calls.
+ *  function so be careful not to rely on it through multiple calls.   
  */
-int parseArguments(char * const line, char **argv);
+int parseArguments(const char * const line, char **argv);
 
 #endif
